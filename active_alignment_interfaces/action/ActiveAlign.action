@@ -1,0 +1,9 @@
+JointAlign[] active_joints
+AlignTopic[] alignment_topics
+---
+bool success
+int32 num_of_iterations
+float32 final_eval_value
+JointAlignmentResult[] joint_results
+---
+bool active

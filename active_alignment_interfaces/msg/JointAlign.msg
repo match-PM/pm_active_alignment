@@ -1,0 +1,4 @@
+string joint_name
+bool has_constraint
+float64 upper_limit
+float64 lower_limit
