@@ -63,9 +63,9 @@ class MultiFrameDeviationNode(Node):
 
                 # Extract translation
                 t = transform.transform.translation
-                distance = math.sqrt(t.x**2 + t.y**2 + t.z**2)
+                distance = math.sqrt(t.x**2 + t.y**2 + t.z**2) 
 
-                distance= 10*distance
+                distance = 10*distance      # Scale distance for better competing with angle deviation in the reward function. This is a hack and should be replaced by a more principled approach in the future.
                 # Extract rotation as quaternion
                 q = transform.transform.rotation
                 r = R.from_quat([q.x, q.y, q.z, q.w])

@@ -1,13 +1,14 @@
 {
     "name": "test_active_alignment",
-    "saved_at": "2025-11-21 17:55:12.775847",
-    "seq_parameters_file": "/home/mll/test.rsapp.json",
+    "saved_at": "2026-05-12 15:08:06.157755",
+    "seq_parameters_file": null,
     "action_list": [
         {
             "name": "/assembly_manager/spawn_frames_from_description",
             "description": "",
             "action_type": "ServiceAction",
             "action_position": 0,
+            "uuid": "9a14f1d1-b4cf-49f3-a225-9fb4acc40819",
             "parameter_references": [],
             "service_client": "/assembly_manager/spawn_frames_from_description",
             "service_type": "assembly_manager_interfaces/srv/SpawnFramesFromDescription",
@@ -23,6 +24,7 @@
             "description": "",
             "action_type": "RosActionAction",
             "action_position": 1,
+            "uuid": "cb159bb1-8a64-4e74-a455-d7bd8c99e36b",
             "parameter_references": [],
             "ros_action_client": "/exec_active_alignment",
             "ros_action_type": "active_alignment_interfaces/action/ActiveAlignment",
@@ -43,6 +45,7 @@
             "description": "",
             "action_type": "RosActionAction",
             "action_position": 2,
+            "uuid": "76bc9d1e-bc0d-44f6-aeba-71d77021ef85",
             "parameter_references": [],
             "ros_action_client": "/exec_active_alignment",
             "ros_action_type": "active_alignment_interfaces/action/ActiveAlign",
@@ -107,6 +110,7 @@
             "description": "",
             "action_type": "RosActionAction",
             "action_position": 3,
+            "uuid": "a7182eca-dee3-4fe5-bf0d-a52ef43bfe6b",
             "parameter_references": [],
             "ros_action_client": "/active_alignment_server/exec_active_alignment_nelder_mead",
             "ros_action_type": "active_alignment_interfaces/action/ActiveAlign",
@@ -171,6 +175,7 @@
             "description": "",
             "action_type": "RosActionAction",
             "action_position": 4,
+            "uuid": "19e27dac-8306-438c-80df-62f22064acc1",
             "parameter_references": [],
             "ros_action_client": "/active_alignment_server/exec_active_alignment_nelder_mead",
             "ros_action_type": "active_alignment_interfaces/action/ActiveAlign",
@@ -235,6 +240,7 @@
             "description": "",
             "action_type": "RosActionAction",
             "action_position": 5,
+            "uuid": "3797122a-60bc-4f3a-86dd-eb13360a7b80",
             "parameter_references": [],
             "ros_action_client": "/active_alignment_server/exec_active_alignment_hill_climb",
             "ros_action_type": "active_alignment_interfaces/action/ActiveAlign",
@@ -290,6 +296,23 @@
                         "weight_factor": 1.0
                     }
                 ]
+            },
+            "has_breakpoint": false,
+            "is_active": true
+        },
+        {
+            "name": "Align Fiber Chip - hillclimb",
+            "description": "",
+            "action_type": "RosActionAction",
+            "action_position": 6,
+            "uuid": "22cf0692-4f62-4668-a876-4be545662489",
+            "parameter_references": [],
+            "ros_action_client": "/active_alignment_server/exec_active_alignment_hill_climb",
+            "ros_action_type": "active_alignment_interfaces/action/ActiveAlign",
+            "error_identifier": "success",
+            "request": {
+                "active_joints": [],
+                "alignment_topics": []
             },
             "has_breakpoint": false,
             "is_active": true

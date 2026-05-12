@@ -80,7 +80,7 @@ class ActiveAlignmentServer(Node):
         #     goal_callback=self.goal_callback,
         #     cancel_callback=self.cancel_callback
         # )
-
+        
         self._action_server_hill_climb = ActionServer(
             self,
             ActiveAlign,
@@ -96,7 +96,6 @@ class ActiveAlignmentServer(Node):
             f'{self.get_name()}/exec_active_alignment_nelder_mead',
             #execute_callback=partial(self.execute_callback, self.nelder_mead_optimization),
             execute_callback=self.make_execute_callback(self.nelder_mead_optimization),
-
             goal_callback=self.goal_callback,
             cancel_callback=self.cancel_callback
         )
