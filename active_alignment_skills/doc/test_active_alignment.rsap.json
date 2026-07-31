@@ -1,10 +1,10 @@
 {
     "name": "test_active_alignment",
-    "saved_at": "2026-05-12 15:08:06.157755",
+    "saved_at": "2026-07-26 19:51:31.512889",
     "seq_parameters_file": null,
     "action_list": [
         {
-            "name": "/assembly_manager/spawn_frames_from_description",
+            "name": "Spawn Frames from Description",
             "description": "",
             "action_type": "ServiceAction",
             "action_position": 0,
@@ -14,102 +14,16 @@
             "service_type": "assembly_manager_interfaces/srv/SpawnFramesFromDescription",
             "error_identifier": "success",
             "request": {
-                "dict_or_path": "/home/mll/ros2_ws/src/pm_active_alignment/active_alignment_skills/doc/spawn_test_frames.json"
+                "dict_or_path": "/home/brotato211/ros2_humble/src/pm_active_alignment/active_alignment_skills/doc/spawn_test_frames.json"
             },
             "has_breakpoint": false,
             "is_active": true
         },
         {
-            "name": "/exec_active_alignment",
+            "name": "Nelder Mead",
             "description": "",
             "action_type": "RosActionAction",
             "action_position": 1,
-            "uuid": "cb159bb1-8a64-4e74-a455-d7bd8c99e36b",
-            "parameter_references": [],
-            "ros_action_client": "/exec_active_alignment",
-            "ros_action_type": "active_alignment_interfaces/action/ActiveAlignment",
-            "error_identifier": null,
-            "request": {
-                "controller_names": [
-                    "smaract_hexapod_controller"
-                ],
-                "topic_names_float": [
-                    "/Test1/distance"
-                ]
-            },
-            "has_breakpoint": false,
-            "is_active": false
-        },
-        {
-            "name": "/exec_active_alignment",
-            "description": "",
-            "action_type": "RosActionAction",
-            "action_position": 2,
-            "uuid": "76bc9d1e-bc0d-44f6-aeba-71d77021ef85",
-            "parameter_references": [],
-            "ros_action_client": "/exec_active_alignment",
-            "ros_action_type": "active_alignment_interfaces/action/ActiveAlign",
-            "error_identifier": "success",
-            "request": {
-                "active_joints": [
-                    {
-                        "joint_name": "SP_X_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
-                    },
-                    {
-                        "joint_name": "SP_Y_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
-                    },
-                    {
-                        "joint_name": "SP_Z_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.1
-                    },
-                    {
-                        "joint_name": "SP_A_Joint",
-                        "has_constraint": true,
-                        "upper_limit": 0.1,
-                        "lower_limit": 0.1
-                    },
-                    {
-                        "joint_name": "SP_B_Joint",
-                        "has_constraint": true,
-                        "upper_limit": 0.1,
-                        "lower_limit": 0.1
-                    },
-                    {
-                        "joint_name": "SP_C_Joint",
-                        "has_constraint": true,
-                        "upper_limit": 0.1,
-                        "lower_limit": 0.1
-                    }
-                ],
-                "alignment_topics": [
-                    {
-                        "topic_name": "/Test1/angle",
-                        "minimize_not_maximize": true,
-                        "weight_factor": 1.0
-                    },
-                    {
-                        "topic_name": "/Test1/distance",
-                        "minimize_not_maximize": true,
-                        "weight_factor": 1.0
-                    }
-                ]
-            },
-            "has_breakpoint": false,
-            "is_active": true
-        },
-        {
-            "name": "/active_alignment_server/exec_active_alignment_nelder_mead",
-            "description": "",
-            "action_type": "RosActionAction",
-            "action_position": 3,
             "uuid": "a7182eca-dee3-4fe5-bf0d-a52ef43bfe6b",
             "parameter_references": [],
             "ros_action_client": "/active_alignment_server/exec_active_alignment_nelder_mead",
@@ -119,50 +33,45 @@
                 "active_joints": [
                     {
                         "joint_name": "SP_X_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
+                        "has_constraint": true,
+                        "upper_limit": 1.04e-05,
+                        "lower_limit": 1.04e-05
                     },
                     {
                         "joint_name": "SP_Y_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
+                        "has_constraint": true,
+                        "upper_limit": 1.04e-05,
+                        "lower_limit": 1.04e-05
                     },
                     {
                         "joint_name": "SP_Z_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
+                        "has_constraint": true,
+                        "upper_limit": 1.04e-05,
+                        "lower_limit": 1.04e-05
                     },
                     {
                         "joint_name": "SP_A_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
+                        "has_constraint": true,
+                        "upper_limit": 0.18976166291725982,
+                        "lower_limit": 0.18976166291725982
                     },
                     {
                         "joint_name": "SP_B_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
+                        "has_constraint": true,
+                        "upper_limit": 0.18976166291725982,
+                        "lower_limit": 0.18976166291725982
                     },
                     {
                         "joint_name": "SP_C_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
+                        "has_constraint": true,
+                        "upper_limit": 0.18976166291725982,
+                        "lower_limit": 0.18976166291725982
                     }
                 ],
                 "alignment_topics": [
                     {
-                        "topic_name": "/Test1/distance",
-                        "minimize_not_maximize": true,
-                        "weight_factor": 1.0
-                    },
-                    {
-                        "topic_name": "/Test1/angle",
-                        "minimize_not_maximize": true,
+                        "topic_name": "/Test1/signal",
+                        "minimize_not_maximize": false,
                         "weight_factor": 1.0
                     }
                 ]
@@ -171,72 +80,7 @@
             "is_active": true
         },
         {
-            "name": "nelder_mead_two frames",
-            "description": "",
-            "action_type": "RosActionAction",
-            "action_position": 4,
-            "uuid": "19e27dac-8306-438c-80df-62f22064acc1",
-            "parameter_references": [],
-            "ros_action_client": "/active_alignment_server/exec_active_alignment_nelder_mead",
-            "ros_action_type": "active_alignment_interfaces/action/ActiveAlign",
-            "error_identifier": "success",
-            "request": {
-                "active_joints": [
-                    {
-                        "joint_name": "SP_X_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
-                    },
-                    {
-                        "joint_name": "SP_Y_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
-                    },
-                    {
-                        "joint_name": "SP_Z_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
-                    },
-                    {
-                        "joint_name": "SP_A_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
-                    },
-                    {
-                        "joint_name": "SP_B_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
-                    },
-                    {
-                        "joint_name": "SP_C_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
-                    }
-                ],
-                "alignment_topics": [
-                    {
-                        "topic_name": "/Test1/distance",
-                        "minimize_not_maximize": true,
-                        "weight_factor": 1.0
-                    },
-                    {
-                        "topic_name": "/Test2/distance",
-                        "minimize_not_maximize": true,
-                        "weight_factor": 1.0
-                    }
-                ]
-            },
-            "has_breakpoint": false,
-            "is_active": true
-        },
-        {
-            "name": "/active_alignment_server/exec_active_alignment_hill_climb",
+            "name": "Hill Climb",
             "description": "",
             "action_type": "RosActionAction",
             "action_position": 5,
@@ -249,49 +93,44 @@
                 "active_joints": [
                     {
                         "joint_name": "SP_X_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
+                        "has_constraint": true,
+                        "upper_limit": 1.04e-05,
+                        "lower_limit": 1.04e-05
                     },
                     {
                         "joint_name": "SP_Y_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
+                        "has_constraint": true,
+                        "upper_limit": 1.04e-05,
+                        "lower_limit": 1.04e-05
                     },
                     {
                         "joint_name": "SP_Z_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
+                        "has_constraint": true,
+                        "upper_limit": 1.04e-05,
+                        "lower_limit": 1.04e-05
                     },
                     {
                         "joint_name": "SP_A_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
+                        "has_constraint": true,
+                        "upper_limit": 0.18976166291725982,
+                        "lower_limit": 0.18976166291725982
                     },
                     {
                         "joint_name": "SP_B_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
+                        "has_constraint": true,
+                        "upper_limit": 0.18976166291725982,
+                        "lower_limit": 0.18976166291725982
                     },
                     {
                         "joint_name": "SP_C_Joint",
-                        "has_constraint": false,
-                        "upper_limit": 0.0,
-                        "lower_limit": 0.0
+                        "has_constraint": true,
+                        "upper_limit": 0.18976166291725982,
+                        "lower_limit": 0.18976166291725982
                     }
                 ],
                 "alignment_topics": [
                     {
-                        "topic_name": "/Test1/distance",
-                        "minimize_not_maximize": true,
-                        "weight_factor": 1.0
-                    },
-                    {
-                        "topic_name": "/Test1/angle",
+                        "topic_name": "/Test1/signal",
                         "minimize_not_maximize": true,
                         "weight_factor": 1.0
                     }
@@ -301,17 +140,114 @@
             "is_active": true
         },
         {
-            "name": "Align Fiber Chip - hillclimb",
+            "name": "Random Search",
             "description": "",
             "action_type": "RosActionAction",
             "action_position": 6,
             "uuid": "22cf0692-4f62-4668-a876-4be545662489",
             "parameter_references": [],
-            "ros_action_client": "/active_alignment_server/exec_active_alignment_hill_climb",
+            "ros_action_client": "/active_alignment_server/exec_active_alignment_random_search",
             "ros_action_type": "active_alignment_interfaces/action/ActiveAlign",
             "error_identifier": "success",
             "request": {
-                "active_joints": [],
+                "active_joints": [
+                    {
+                        "joint_name": "SP_X_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 1.04e-05,
+                        "lower_limit": 1.04e-05
+                    },
+                    {
+                        "joint_name": "SP_Y_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 1.04e-05,
+                        "lower_limit": 1.04e-05
+                    },
+                    {
+                        "joint_name": "SP_Z_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 1.04e-05,
+                        "lower_limit": 1.04e-05
+                    },
+                    {
+                        "joint_name": "SP_A_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 0.18976166291725982,
+                        "lower_limit": 0.18976166291725982
+                    },
+                    {
+                        "joint_name": "SP_B_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 0.18976166291725982,
+                        "lower_limit": 0.18976166291725982
+                    },
+                    {
+                        "joint_name": "SP_C_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 0.18976166291725982,
+                        "lower_limit": 0.18976166291725982
+                    }
+                ],
+                "alignment_topics": [
+                    {
+                        "topic_name": "/Test1/signal",
+                        "minimize_not_maximize": false,
+                        "weight_factor": 1.0
+                    }
+                ]
+            },
+            "has_breakpoint": false,
+            "is_active": true
+        },
+        {
+            "name": "Batch Runner",
+            "description": "Run multiple algorithm iterations from batch_config.json",
+            "action_type": "RosActionAction",
+            "action_position": 7,
+            "uuid": "a1b2c3d4-0000-0000-0000-000000000000",
+            "parameter_references": [],
+            "ros_action_client": "/active_alignment_server/exec_active_alignment_batch",
+            "ros_action_type": "active_alignment_interfaces/action/ActiveAlign",
+            "error_identifier": "success",
+            "request": {
+                "active_joints": [
+                    {
+                        "joint_name": "SP_X_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 1.04e-05,
+                        "lower_limit": 1.04e-05
+                    },
+                    {
+                        "joint_name": "SP_Y_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 1.04e-05,
+                        "lower_limit": 1.04e-05
+                    },
+                    {
+                        "joint_name": "SP_Z_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 1.04e-05,
+                        "lower_limit": 1.04e-05
+                    },
+                    {
+                        "joint_name": "SP_A_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 0.18976166291725982,
+                        "lower_limit": 0.18976166291725982
+                    },
+                    {
+                        "joint_name": "SP_B_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 0.18976166291725982,
+                        "lower_limit": 0.18976166291725982
+                    },
+                    {
+                        "joint_name": "SP_C_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 0.18976166291725982,
+                        "lower_limit": 0.18976166291725982
+                    }
+                ],
                 "alignment_topics": []
             },
             "has_breakpoint": false,

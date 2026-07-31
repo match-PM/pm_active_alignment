@@ -1,0 +1,56 @@
+{
+  "seed_groups": [
+    {"power_percent": 0.0, "num_seeds": 2},
+    {"power_percent": 2.0, "num_seeds": 2},
+    {"power_percent": 20.0, "num_seeds": 2},
+    {"power_percent": 60.0, "num_seeds": 2}
+  ],
+  "tasks": [
+    {
+      "algorithm": "Hill Climb",
+      "iterations": 50,
+      "params": {
+        "max_iterations": 100,
+        "step_size": 0.1,
+        "stop_threshold": 0.99,
+        "maximize": true,
+        "coordinate_wise": true,
+        "adaptive_step": false,
+        "step_increase_factor": 1.2,
+        "step_decrease_factor": 0.5,
+        "min_step": 0.001,
+        "max_step": 0.3,
+        "movement_time": 0.01
+      }
+    },
+    {
+      "algorithm": "Nelder-Mead",
+      "iterations": 50,
+      "params": {
+        "maxiter": 100,
+        "xatol": 1e-5,
+        "fatol": 1e-5,
+        "disp": true,
+        "stop_threshold": 0.99,
+        "simplex_step": 0.05,
+        "alpha": 1.0,
+        "gamma": 2.0,
+        "rho": 0.5,
+        "sigma": 0.5
+      }
+    },
+    {
+      "algorithm": "Random Search",
+      "iterations": 50,
+      "params": {
+        "max_iterations": 100,
+        "use_global_search": true,
+        "perturbation_scale": 0.3,
+        "stop_threshold": 0.99,
+        "movement_time": 0.01,
+        "wait_for_settle": 0.005
+      }
+    }
+  ],
+  "reset_position": 0.5
+}

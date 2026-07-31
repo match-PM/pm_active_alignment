@@ -4,16 +4,16 @@ from std_msgs.msg import Float32
 from active_alignment_interfaces.msg import AlignTopic  # <-- your action interface
 import time
 
-class AlignTopicEntry(AlignTopic):
+class AlignTopicEntry(AlignTopic): 
     def __init__(self, align_topic: AlignTopic, node:Node):
         super().__init__()
-        self.topic_name = align_topic.topic_name
+        self.topic_name = align_topic.topic_name #AlignTopic object blueprint, found under msg
         self.weight_factor = align_topic.weight_factor
         self.minimize_not_maximize = align_topic.minimize_not_maximize
         self.node = node
 
         self.subscription = self.node.create_subscription(
-            Float32,
+            Float32, #not number but datatype
             self.topic_name,
             self.topic_callback,
             10
@@ -23,8 +23,8 @@ class AlignTopicEntry(AlignTopic):
         self.current_timestamp = None
         self.value_history: list[float] = []
 
-    def topic_callback(self, msg: Float32):
-        self.current_value = msg.data
+    def topic_callback(self, msg: Float32): #is called when publishing anything
+        self.current_value = msg.data #syntax 
         self.current_timestamp = self.node.get_clock().now()
         #self.node.get_logger().info(f"Received message on {self.topic_name}: {msg.data}")
 
@@ -58,7 +58,7 @@ class OptimizationValueManager:
         self.eval_value_pub = self.node.create_publisher(Float32, 'active_alignment/eval_value', 10)
         self.eval_value_timer = self.node.create_timer(0.1, self._publish_eval_value)
 
-        self.alignment_topics: list[AlignTopicEntry] = []
+        self.alignment_topics: list[AlignTopicEntry] = [] #creates empty list, in rsap add sub manually using exact topic names
 
         self.last_update_dict: dict[str, rclpy.time.Time] = {}
 
@@ -81,7 +81,7 @@ class OptimizationValueManager:
 
         if not self._check_values_available():
             return  # don’t publish yet
-        eval_value = self._calc_output_signal()
+        eval_value = self.fetch_output_signal()
         msg = Float32()
         msg.data = eval_value
         self.eval_value_pub.publish(msg)
@@ -98,10 +98,10 @@ class OptimizationValueManager:
     def _get_eval_value(self, add_to_history = False) -> float:
         if not self._check_values_available():
             return None
-        return self._calc_output_signal(add_to_history = add_to_history)
+        return self.fetch_output_signal(add_to_history = add_to_history)
 
         
-    def _calc_output_signal(self, add_to_history = False) -> float:
+    def fetch_output_signal(self, add_to_history = False) -> float: #final signal, delete calculations, make it only for propogation of signal to correct target
         total_weight = 0.0
         weighted_sum = 0.0
 
@@ -118,46 +118,18 @@ class OptimizationValueManager:
                     topic_entry.value_history.append(value)
 
                 # If minimizing, invert the value
-                if not topic_entry.minimize_not_maximize:
+                if not topic_entry.minimize_not_maximize: #braucht negatives signal für maximierung
                     value = -value
 
                 weighted_sum += weight * value
                 total_weight += weight
+                signal = weighted_sum / total_weight if total_weight > 0 else 0.0
 
         if total_weight == 0:
             return 0.0  # Avoid division by zero
 
-        return weighted_sum / total_weight
+        return signal
     
-    # def get_eval_value(self, wait_for_update_sec: int = 0, check_for_new_values = False) -> float:
-    #     """
-    #     Get the current evaluation value.
-    #     If wait_for_update_sec > 0, waits up to that many seconds for a valid value.
-    #     If no valid value is received, raises a ValueError.
-    #     If wait_for_update_sec == 0, returns the current value or raises ValueError if none.
-        
-    #     Returns:
-    #         float: The current evaluation value.
-    #         Raises:
-    #             ValueError: If no valid evaluation value is received within the wait time.
-    #     """
-            
-    #     if wait_for_update_sec > 0:
-    #         best_eval = None
-
-    #         for _ in range(wait_for_update_sec * 10):
-    #             best_eval = self._get_eval_value()
-    #             if best_eval is not None:
-    #                 return best_eval
-    #             time.sleep(0.1)  # wait for eval to update
-    #         raise ValueError("No eval value received during optimization.")
-        
-    #     else:   
-    #         value = self._get_eval_value()
-
-    #         if value is None:
-    #             raise ValueError("No eval value received during optimization.")
-    #         return value
 
     def get_eval_value(self, 
                        wait_for_update_sec: int = 0, 

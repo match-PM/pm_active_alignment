@@ -1,0 +1,21 @@
+{
+  "W0": 5.2e-06,
+  "LAMBDA": 1.55e-06,
+  "SEARCH_FACTOR": 2.0,
+  "THETA_EFF": 0.09488083145862991,
+  "MODE": "6D",
+  "ENABLED_JOINTS": {
+    "SP_X_Joint": true,
+    "SP_Y_Joint": true,
+    "SP_Z_Joint": true,
+    "SP_A_Joint": true,
+    "SP_B_Joint": true,
+    "SP_C_Joint": true
+  },
+  "RANDOM_SEED": 4231366180,
+  "MAGNITUDE_OFSET_M": 1.2e-05,
+  "CUSTOM_MAGNITUDE_ANGLE_DEG": 3.0,
+  "INITIAL_POWER_PERCENT": 0.06868795247299758,
+  "trans_limit": 1.04e-05,
+  "rot_limit": 0.18976166291725982
+}

@@ -7,33 +7,15 @@
       "parent_frame": "SmarPod_Origin",
       "transformation": {
         "translation": {
-          "X": 0.0,
-          "Y": 0.0,
-          "Z": 80.0
+          "X": -0.0016047003805457537,
+          "Y": 0.001890943661190876,
+          "Z": 57.3724483337515
         },
         "rotation": {
-          "X": 0.0,
-          "Y": 0.0,
-          "Z": 0.0,
-          "W": 1.0
-        }
-      },
-      "constraints": {}
-    },
-    {
-      "name": "Target_2",
-      "parent_frame": "SmarPod_Origin",
-      "transformation": {
-        "translation": {
-          "X": 0.0,
-          "Y": 3.0,
-          "Z": 80.0
-        },
-        "rotation": {
-          "X": 0.0,
-          "Y": 0.0,
-          "Z": 0.0,
-          "W": 1.0
+          "X": -0.057520995952399116,
+          "Y": 0.06626208223060491,
+          "Z": 0.016922842167242654,
+          "W": 0.9959991410117236
         }
       },
       "constraints": {}
@@ -44,25 +26,7 @@
       "transformation": {
         "translation": {
           "X": 0.0,
-          "Y": 5.0,
-          "Z": 0.0
-        },
-        "rotation": {
-          "X": 0.0,
           "Y": 0.0,
-          "Z": 0.0,
-          "W": 1.0
-        }
-      },
-      "constraints": {}
-    },
-    {
-      "name": "Align_2",
-      "parent_frame": "Smarpod_Part_Spawn",
-      "transformation": {
-        "translation": {
-          "X": 0.0,
-          "Y": 8.0,
           "Z": 0.0
         },
         "rotation": {
