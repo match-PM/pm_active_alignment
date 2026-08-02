@@ -465,6 +465,7 @@ class ActiveAlignmentServer(Node):
     # ============================================================
     # BATCH OPTIMIZATION – with memory cleanup & spawn client recreation
     # ============================================================
+
     async def batch_optimization(self, goal_handle):
         self.get_logger().info("🚀 Batch optimization started")
         self.print_subscription_count()
@@ -473,14 +474,17 @@ class ActiveAlignmentServer(Node):
         self.get_logger().info(f"📁 Looking for batch config at: {config_path}")
         if not config_path.exists():
             self.get_logger().error(f"Batch config not found at {config_path}")
-            goal_handle.abort()
-            result = ActiveAlign.Result(); result.success = False; return result
+            result = ActiveAlign.Result()
+            result.success = False
+            return result
         try:
             with open(config_path, 'r') as f:
                 config = json.load(f)
         except Exception as e:
             self.get_logger().error(f"Failed to load batch config: {e}")
-            goal_handle.abort(); result = ActiveAlign.Result(); result.success = False; return result
+            result = ActiveAlign.Result()
+            result.success = False
+            return result
 
         tasks = config.get('tasks', [])
         reset_position = config.get('reset_position', 0.5)
@@ -490,7 +494,9 @@ class ActiveAlignmentServer(Node):
         self.load_seed_poses()
         if not self.seed_poses and seed_groups_spec:
             self.get_logger().error("Seed groups specified but no seed poses loaded.")
-            goal_handle.abort(); result = ActiveAlign.Result(); result.success = False; return result
+            result = ActiveAlign.Result()
+            result.success = False
+            return result
 
         if not self.metadata:
             self.metadata = self.read_metadata_from_files()
@@ -505,9 +511,14 @@ class ActiveAlignmentServer(Node):
 
         self.get_logger().info(f"📋 Tasks to run: {[(t['algorithm'], t.get('iterations', 1)) for t in tasks]}")
 
-        for group_spec in seed_groups_spec:
+        # Track if we ever created a manager (so we know if we can reset)
+        manager_created = False
+
+        for group_idx, group_spec in enumerate(seed_groups_spec):
             power = group_spec.get('power_percent')
             num_seeds = group_spec.get('num_seeds', 1)
+            self.get_logger().info(f"🔍 Processing group {group_idx+1}/{len(seed_groups_spec)}: power={power}, num_seeds={num_seeds}")
+
             group_data = None
             for g in self.seed_poses:
                 if abs(g['power_percent'] - power) < 1e-6:
@@ -516,8 +527,14 @@ class ActiveAlignmentServer(Node):
             if not group_data:
                 self.get_logger().warn(f"No seed poses found for power {power}%. Skipping.")
                 continue
+
             seeds = group_data['seeds'][:num_seeds]
             self.get_logger().info(f"🔘 Testing {len(seeds)} seeds at {power}% power level.")
+
+            # If there are no seeds, skip this group entirely (no seed loop, no algorithm runs)
+            if not seeds:
+                self.get_logger().info(f"⏭️ Skipping group {power}% (num_seeds=0)")
+                continue
 
             for seed_idx, seed in enumerate(seeds):
                 self.get_logger().info(f"--- Seed {seed_idx+1}/{len(seeds)} (seed={seed['seed']}) ---")
@@ -525,27 +542,26 @@ class ActiveAlignmentServer(Node):
                 # ---- Check cancellation before writing spawn ----
                 if goal_handle.is_cancel_requested:
                     self.get_logger().info("Batch cancelled before writing spawn.")
-                    goal_handle.canceled()
-                    result = ActiveAlign.Result(); result.success = False
+                    result = ActiveAlign.Result()
+                    result.success = False
                     return result
 
                 if not self.write_spawn_json_from_seed(seed):
                     self.get_logger().error("Failed to write spawn JSON for seed. Skipping.")
                     continue
 
-                # ---- Check cancellation before reloading spawn ----
                 if goal_handle.is_cancel_requested:
                     self.get_logger().info("Batch cancelled before reloading spawn.")
-                    goal_handle.canceled()
-                    result = ActiveAlign.Result(); result.success = False
+                    result = ActiveAlign.Result()
+                    result.success = False
                     return result
 
                 if not await self.reload_spawn_frames():
                     self.get_logger().error("Failed to reload spawn frames. Skipping seed.")
                     continue
+
                 time.sleep(0.2)
 
-                # Build run-specific metadata
                 run_metadata = deepcopy(self.metadata)
                 initial_power = self.compute_initial_power_from_seed(seed, n_trans, n_rot)
                 run_metadata['INITIAL_POWER_PERCENT'] = initial_power
@@ -558,6 +574,29 @@ class ActiveAlignmentServer(Node):
                 run_metadata['initial_angle_deg'] = np.degrees(run_metadata['theta_actual'])
                 run_metadata['initial_signal'] = initial_power
 
+                # ---- Verify spawn reload with signal check (5% tolerance) ----
+                expected_signal = run_metadata['INITIAL_POWER_PERCENT'] / 100.0
+                signal_verified = False
+                for attempt in range(5):
+                    temp_reader = MetricsReader(self, "/Test1")
+                    try:
+                        current_signal = temp_reader.get_metrics()['signal']
+                        self.get_logger().info(f"🔍 Signal check attempt {attempt+1}: current={current_signal:.4f}, expected={expected_signal:.4f}")
+                        if abs(current_signal - expected_signal) < 0.05:
+                            signal_verified = True
+                            self.get_logger().info("✅ Signal verified, TF is consistent.")
+                            break
+                        else:
+                            self.get_logger().warn(f"⚠️ Signal mismatch (attempt {attempt+1}), waiting for TF to propagate...")
+                            time.sleep(0.2)
+                    finally:
+                        for sub in temp_reader.subs.values():
+                            self.destroy_subscription(sub)
+                        del temp_reader
+
+                if not signal_verified:
+                    self.get_logger().warn("⚠️ Signal could not be verified within 5 attempts. Proceeding anyway.")
+
                 # ---- Inner loop over tasks ----
                 for task_idx, task in enumerate(tasks):
                     algo_name = task.get('algorithm')
@@ -569,26 +608,33 @@ class ActiveAlignmentServer(Node):
                         continue
                     method = algo_map[algo_name]
 
+                    # If iterations is 0, skip this algorithm entirely
+                    if iterations == 0:
+                        self.get_logger().info(f"  ⏭️ Skipping {algo_name} (iterations=0)")
+                        continue
+
+                    # We'll track if we actually ran any runs, so we know if we need to reset
+                    ran_any_runs = False
+
                     for run_idx in range(iterations):
-                        # ---- Check cancellation before each run ----
                         if goal_handle.is_cancel_requested:
                             self.get_logger().info("Batch cancelled before run.")
-                            goal_handle.canceled()
-                            result = ActiveAlign.Result(); result.success = False
+                            result = ActiveAlign.Result()
+                            result.success = False
                             return result
 
-                        # ---- Reinitialise controller manager for each run ----
                         alignment_controller_mgr = await self.init_controller_manager(dummy_goal)
                         if not alignment_controller_mgr:
                             self.get_logger().error("Failed to initialise controller manager for run.")
                             overall_success = False
                             continue
 
-                        # ---- Reset to center before run ----
-                        self.reset_joints_to_center(alignment_controller_mgr, reset_position)
-                        time.sleep(0.2)
+                        manager_created = True
+                        ran_any_runs = True
 
-                        # ---- Prepare run folder ----
+                        self.reset_joints_to_center(alignment_controller_mgr, reset_position)
+                        time.sleep(0.1)
+
                         self.current_algorithm_name = algo_name
                         if algo_name not in self.run_counters:
                             self.run_counters[algo_name] = 0
@@ -629,11 +675,9 @@ class ActiveAlignmentServer(Node):
                             self.get_logger().error(f"❌ Run {run_folder_name} failed: {e}", exc_info=True)
                             overall_success = False
 
-                        # ---- Reset to center after this run ----
                         self.reset_joints_to_center(alignment_controller_mgr, reset_position)
                         self.get_logger().info(f"🔄 Reset after run {run_idx+1} for {algo_name}.")
 
-                        # ---- Cleanup after each run ----
                         try:
                             if metrics_reader is not None:
                                 del metrics_reader
@@ -641,11 +685,11 @@ class ActiveAlignmentServer(Node):
                         except Exception as e:
                             self.get_logger().debug(f"Cleanup warning: {e}")
 
-                    # ---- After all runs for this algorithm, reset to center (extra safety) ----
-                    self.reset_joints_to_center(alignment_controller_mgr, reset_position)
-                    self.get_logger().info(f"🔄 Reset to center after {algo_name} runs for this seed.")
+                    # After finishing all runs for this algorithm, reset to center only if we actually ran something
+                    if ran_any_runs:
+                        self.reset_joints_to_center(alignment_controller_mgr, reset_position)
+                        self.get_logger().info(f"🔄 Reset to center after {algo_name} runs for this seed.")
 
-                    # ---- Recreate the spawn service client after each algorithm batch ----
                     self.get_logger().info("♻️ Recreating spawn service client after algorithm batch...")
                     try:
                         if hasattr(self, 'spawn_client') and self.spawn_client is not None:
@@ -662,16 +706,19 @@ class ActiveAlignmentServer(Node):
                         self.get_logger().info('Waiting for spawn service...')
                     gc.collect()
 
-                # ---- Final reset after seed ----
-                self.reset_joints_to_center(alignment_controller_mgr, reset_position)
-                self.get_logger().info(f"🔄 Final reset after seed {seed_idx+1}.")
-                gc.collect()
+                # ---- Final reset after seed (only if we created a manager) ----
+                if manager_created and alignment_controller_mgr is not None:
+                    self.reset_joints_to_center(alignment_controller_mgr, reset_position)
+                    self.get_logger().info(f"🔄 Final reset after seed {seed_idx+1}.")
+                    gc.collect()
+                else:
+                    self.get_logger().info(f"ℹ️ No manager created for seed {seed_idx+1}, skipping final reset.")
 
-        goal_handle.succeed()
         result_msg = ActiveAlign.Result()
         result_msg.success = overall_success
         self.get_logger().info("🏁 Batch optimization finished.")
         return result_msg
+
     # ============================================================
     # SPAWN HELPERS
     # ============================================================
@@ -754,6 +801,33 @@ class ActiveAlignmentServer(Node):
         joint_names = list(best_positions_mapped.keys())
         self.move_joints_to_current_stat_sync(alignment_controller_mgr, move_time=movement_time)
 
+        # ---- HARDCORED PRE-FLIGHT CHECK ----
+        need_fallback = False
+        for j in joint_names:
+            if j not in self._current_joint_state_positions:
+                continue
+            if abs(self._current_joint_state_positions[j]) > 1e-4:
+                need_fallback = True
+                self.get_logger().warn(f"Joint {j} physical position {self._current_joint_state_positions[j]:.6f} not at center (0.0)")
+                break
+
+        if need_fallback:
+            self.get_logger().warn("⚠️ Joints physically not at center. Forcing each joint to 0.5 with physical verification...")
+            current_norm = alignment_controller_mgr.get_all_joint_states_as_mapped()
+            for j in joint_names:
+                current_norm[j] = 0.5
+                alignment_controller_mgr.set_joint_states_from_mapped(current_norm)
+                self.move_joints_to_current_stat_sync(alignment_controller_mgr, move_time=0.05)
+                time.sleep(0.05)
+                if j in self._current_joint_state_positions and abs(self._current_joint_state_positions[j]) > 1e-4:
+                    self.get_logger().error(f"❌ Joint {j} still not at center after forced move! Physical: {self._current_joint_state_positions[j]:.6f}")
+                    self.move_joints_to_current_stat_sync(alignment_controller_mgr, move_time=0.2)
+                    time.sleep(0.1)
+            # Re‑fetch after fallback
+            best_positions_mapped = alignment_controller_mgr.get_all_joint_states_as_mapped()
+            joint_names = list(best_positions_mapped.keys())
+            self.move_joints_to_current_stat_sync(alignment_controller_mgr, move_time=movement_time)
+
         # History containers
         signal_hist = []
         eta_lat_hist = []
@@ -769,7 +843,6 @@ class ActiveAlignmentServer(Node):
             nonlocal eval_count
             eval_count += 1
 
-            # ---- Immediate cancellation check ----
             if goal_handle.is_cancel_requested:
                 goal_handle.canceled()
                 raise BreakOptimization("Cancelled during Hill Climb measurement")
@@ -809,15 +882,12 @@ class ActiveAlignmentServer(Node):
             stop_reason = "threshold_reached"
             self.get_logger().info(f"✅ Initial signal already ≥ {stop_threshold*100}%")
         else:
-            for sweep_idx in range(max_iterations):  # safety cap, break by eval_count
+            sweep_idx = 0
+            while eval_count < max_iterations:
                 if goal_handle.is_cancel_requested:
                     goal_handle.canceled()
                     stop_reason = "cancelled"
                     raise BreakOptimization("Cancelled during Hill Climb sweep")
-
-                if eval_count >= max_iterations:
-                    stop_reason = "max_measurements"
-                    break
 
                 improvement_found = False
                 threshold_reached = False
@@ -903,8 +973,9 @@ class ActiveAlignmentServer(Node):
                     break
 
                 alignment_controller_mgr.set_joint_states_from_mapped(best_positions)
+                sweep_idx += 1
                 if sweep_idx % 10 == 0:
-                    self.get_logger().info(f"Sweep {sweep_idx+1}: best={best_eval:.6f}, evals={eval_count}/{max_iterations}")
+                    self.get_logger().info(f"Sweep {sweep_idx}: best={best_eval:.6f}, evals={eval_count}/{max_iterations}")
 
         # --- Finalise ---
         alignment_controller_mgr.set_joint_states_from_mapped(best_positions)
@@ -914,13 +985,9 @@ class ActiveAlignmentServer(Node):
         final_dist_perc = dist_perc_hist[-1] if dist_perc_hist else 0.0
         final_angle_perc = angle_perc_hist[-1] if angle_perc_hist else 0.0
 
-        # ======================================================================
-        # 📁 SAVE RESULTS – ALWAYS EXECUTED (even on early stop / max iter)
-        # ======================================================================
         if run_folder is not None:
             self.get_logger().info(f"📁 Saving results to {run_folder}")
 
-            # Pad all histories to match signal_hist length
             n = len(signal_hist)
             if len(eta_lat_hist) < n:
                 eta_lat_hist.extend([0.0] * (n - len(eta_lat_hist)))
@@ -938,13 +1005,12 @@ class ActiveAlignmentServer(Node):
 
             end_time = time.time()
 
-            # Save CSV and metadata
             try:
                 self.save_run_results(
                     run_folder, signal_hist, eta_lat_hist, eta_ang_hist, eta_clean_hist,
                     dist_perc_hist, angle_perc_hist, joint_hist, joint_names,
                     self.current_algorithm_name, metadata, start_time, end_time,
-                    final_signal, final_dist_perc, final_angle_perc, len(signal_hist)-1,
+                    final_signal, final_dist_perc, final_angle_perc, len(signal_hist),  # <-- now len(signal_hist)
                     params={
                         'max_iterations': max_iterations,
                         'step_size': step_size,
@@ -989,6 +1055,33 @@ class ActiveAlignmentServer(Node):
         x0_joint_names = list(x0_dict.keys())
         x0_joint_values = np.array(list(x0_dict.values()), dtype=float)
 
+        # ---- HARDCORED PRE-FLIGHT CHECK ----
+        need_fallback = False
+        for j in x0_joint_names:
+            if j not in self._current_joint_state_positions:
+                continue
+            if abs(self._current_joint_state_positions[j]) > 1e-4:
+                need_fallback = True
+                self.get_logger().warn(f"Joint {j} physical position {self._current_joint_state_positions[j]:.6f} not at center (0.0)")
+                break
+
+        if need_fallback:
+            self.get_logger().warn("⚠️ Joints physically not at center. Forcing each joint to 0.5 with physical verification...")
+            current_norm = alignment_controller_mgr.get_all_joint_states_as_mapped()
+            for j in x0_joint_names:
+                current_norm[j] = 0.5
+                alignment_controller_mgr.set_joint_states_from_mapped(current_norm)
+                self.move_joints_to_current_stat_sync(alignment_controller_mgr, move_time=0.05)
+                time.sleep(0.05)
+                if j in self._current_joint_state_positions and abs(self._current_joint_state_positions[j]) > 1e-4:
+                    self.get_logger().error(f"❌ Joint {j} still not at center after forced move! Physical: {self._current_joint_state_positions[j]:.6f}")
+                    self.move_joints_to_current_stat_sync(alignment_controller_mgr, move_time=0.2)
+                    time.sleep(0.1)
+            # Re‑fetch after fallback
+            x0_dict = alignment_controller_mgr.get_all_joint_states_as_mapped()
+            x0_joint_names = list(x0_dict.keys())
+            x0_joint_values = np.array(list(x0_dict.values()), dtype=float)
+
         # History containers
         signal_hist = []
         eta_lat_hist = []
@@ -1012,7 +1105,6 @@ class ActiveAlignmentServer(Node):
             nonlocal eval_count
             eval_count += 1
 
-            # ---- Immediate cancellation check ----
             if goal_handle.is_cancel_requested:
                 goal_handle.canceled()
                 raise BreakOptimization("Cancelled during Nelder-Mead measurement")
@@ -1054,12 +1146,9 @@ class ActiveAlignmentServer(Node):
         def objective(x):
             return -measure_signal(x)
 
-        # --- Main optimization ---
         try:
-            # Initial measurement (eval #1)
             initial_signal = measure_signal(x0_joint_values)
 
-            # Build initial simplex
             n = len(x0_joint_values)
             simplex_step = 0.05
             simplex = np.zeros((n + 1, n))
@@ -1070,7 +1159,6 @@ class ActiveAlignmentServer(Node):
                 vertex[i] = np.clip(vertex[i], 0.0, 1.0)
                 simplex[i + 1] = vertex
 
-            # Evaluate all vertices (adds n more evaluations)
             f_values = np.array([objective(vertex) for vertex in simplex], dtype=float)
 
             if eval_count >= maxiter:
@@ -1081,16 +1169,11 @@ class ActiveAlignmentServer(Node):
             best_x = simplex[0].copy()
             best_f = f_values[0]
 
-            # --- Main loop ---
-            for iteration in range(maxiter):  # safety cap, break by eval_count
+            iteration = 0
+            while eval_count < maxiter:
                 if goal_handle.is_cancel_requested:
                     goal_handle.canceled()
                     raise BreakOptimization("Cancelled during Nelder-Mead iteration")
-
-                if eval_count >= maxiter:
-                    stop_reason = "max_measurements"
-                    self.get_logger().info(f"Reached max measurements ({maxiter}). Stopping.")
-                    break
 
                 # Sort simplex
                 order = np.argsort(f_values)
@@ -1104,7 +1187,6 @@ class ActiveAlignmentServer(Node):
                 f_second_worst = f_values[-2]
                 f_worst = f_values[-1]
 
-                # Convergence
                 simplex_size = np.max(np.linalg.norm(simplex[1:] - best, axis=1))
                 function_spread = np.max(np.abs(f_values[1:] - f_best))
                 if simplex_size <= xatol and function_spread <= fatol:
@@ -1125,6 +1207,7 @@ class ActiveAlignmentServer(Node):
                 if f_best <= f_reflected < f_second_worst:
                     simplex[-1] = reflected
                     f_values[-1] = f_reflected
+                    iteration += 1
                     continue
 
                 # 2. Expansion
@@ -1141,6 +1224,7 @@ class ActiveAlignmentServer(Node):
                     else:
                         simplex[-1] = reflected
                         f_values[-1] = f_reflected
+                    iteration += 1
                     continue
 
                 # 3. Contraction
@@ -1154,7 +1238,9 @@ class ActiveAlignmentServer(Node):
                     if f_contracted <= f_reflected:
                         simplex[-1] = contracted
                         f_values[-1] = f_contracted
-                        continue
+                    else:
+                        # outside contraction failed, fall through to shrink
+                        pass
                 else:
                     contracted = centroid + 0.5 * (worst - centroid)
                     contracted = np.clip(contracted, 0.0, 1.0)
@@ -1165,6 +1251,7 @@ class ActiveAlignmentServer(Node):
                     if f_contracted < f_worst:
                         simplex[-1] = contracted
                         f_values[-1] = f_contracted
+                        iteration += 1
                         continue
 
                 # 4. Shrink
@@ -1179,6 +1266,7 @@ class ActiveAlignmentServer(Node):
                 if eval_count >= maxiter:
                     break
 
+                iteration += 1
                 if iteration % 10 == 0:
                     self.get_logger().debug(f"NM iter {iteration}: best={-best_f:.6f}, evals={eval_count}/{maxiter}")
 
@@ -1198,7 +1286,6 @@ class ActiveAlignmentServer(Node):
             final_best_f = -signal_hist[-1] if signal_hist else 0.0
 
         except BreakOptimization:
-            # stop_reason already set (max_measurements or cancelled)
             if joint_hist:
                 final_best_x = np.clip(joint_hist[-1], 0, 1)
             else:
@@ -1211,13 +1298,9 @@ class ActiveAlignmentServer(Node):
             final_best_f = -signal_hist[-1] if signal_hist else 0.0
             stop_reason = "error"
 
-        # --- Finalise ---
         best_result = dict(zip(x0_joint_names, final_best_x))
         final_signal = -final_best_f if final_best_f is not None else (signal_hist[-1] if signal_hist else 0.0)
 
-        # ======================================================================
-        # 📁 SAVE RESULTS – ALWAYS EXECUTED (even on early stop / max iter)
-        # ======================================================================
         if run_folder is not None:
             self.get_logger().info(f"📁 Saving results to {run_folder}")
 
@@ -1225,7 +1308,6 @@ class ActiveAlignmentServer(Node):
                 self.get_logger().warn("No signal history recorded; cannot generate plot.")
                 return OptimizationResult(best_result, eval_count, final_signal)
 
-            # Pad all histories to match signal_hist length
             n = len(signal_hist)
             if len(eta_lat_hist) < n:
                 eta_lat_hist.extend([0.0] * (n - len(eta_lat_hist)))
@@ -1245,13 +1327,12 @@ class ActiveAlignmentServer(Node):
             final_dist_perc = dist_perc_hist[-1] if dist_perc_hist else 0.0
             final_angle_perc = angle_perc_hist[-1] if angle_perc_hist else 0.0
 
-            # Save CSV and metadata
             try:
                 self.save_run_results(
                     run_folder, signal_hist, eta_lat_hist, eta_ang_hist, eta_clean_hist,
                     dist_perc_hist, angle_perc_hist, joint_hist, x0_joint_names,
                     self.current_algorithm_name, metadata, start_time, end_time,
-                    final_signal, final_dist_perc, final_angle_perc, len(signal_hist)-1,
+                    final_signal, final_dist_perc, final_angle_perc, len(signal_hist),  # <-- now len(signal_hist)
                     params={
                         'maxiter': maxiter,
                         'xatol': xatol,
@@ -1300,6 +1381,37 @@ class ActiveAlignmentServer(Node):
         joint_names = list(x0_dict.keys())
         n = len(joint_names)
 
+        # ---- HARDCORED PRE-FLIGHT CHECK: verify physical joints are at center ----
+        need_fallback = False
+        for j in joint_names:
+            if j not in self._current_joint_state_positions:
+                self.get_logger().warn(f"Joint {j} not in joint_states, assuming at center.")
+                continue
+            if abs(self._current_joint_state_positions[j]) > 1e-4:
+                need_fallback = True
+                self.get_logger().warn(f"Joint {j} physical position {self._current_joint_state_positions[j]:.6f} not at center (0.0)")
+                break
+
+        if need_fallback:
+            self.get_logger().warn("⚠️ Joints physically not at center. Forcing each joint to 0.5 with physical verification...")
+            current_norm = alignment_controller_mgr.get_all_joint_states_as_mapped()
+            for j in joint_names:
+                current_norm[j] = 0.5
+                alignment_controller_mgr.set_joint_states_from_mapped(current_norm)
+                self.move_joints_to_current_stat_sync(alignment_controller_mgr, move_time=0.05)
+                time.sleep(0.05)
+                if j in self._current_joint_state_positions:
+                    if abs(self._current_joint_state_positions[j]) > 1e-4:
+                        self.get_logger().error(f"❌ Joint {j} still not at center after forced move! Physical: {self._current_joint_state_positions[j]:.6f}")
+                        self.move_joints_to_current_stat_sync(alignment_controller_mgr, move_time=0.2)
+                        time.sleep(0.1)
+                        if j in self._current_joint_state_positions and abs(self._current_joint_state_positions[j]) > 1e-4:
+                            self.get_logger().error(f"❌ Joint {j} still off-center after retry. Continuing with caution.")
+            # Re‑fetch after fallback
+            x0_dict = alignment_controller_mgr.get_all_joint_states_as_mapped()
+            joint_names = list(x0_dict.keys())
+            n = len(joint_names)
+
         signal_hist = []
         eta_lat_hist = []
         eta_ang_hist = []
@@ -1314,7 +1426,6 @@ class ActiveAlignmentServer(Node):
             nonlocal eval_count
             eval_count += 1
 
-            # ---- Immediate cancellation check ----
             if goal_handle.is_cancel_requested:
                 goal_handle.canceled()
                 raise BreakOptimization("Cancelled during Random Search measurement")
@@ -1340,7 +1451,6 @@ class ActiveAlignmentServer(Node):
                 signal = self.optimization_value_manager.get_eval_value(
                     wait_for_update_sec=3.0, check_for_new_values=True)
                 signal_hist.append(signal)
-                # Fill dummy values for other histories to keep length consistent
                 eta_lat_hist.append(0.0)
                 eta_ang_hist.append(0.0)
                 eta_clean_hist.append(0.0)
@@ -1350,12 +1460,10 @@ class ActiveAlignmentServer(Node):
 
             return signal
 
-        # --- Initial measurement (eval #1) ---
         x_best = np.array([x0_dict[j] for j in joint_names], dtype=float)
         best_signal = measure_signal(x_best)
         self.get_logger().info(f"Initial signal: {best_signal:.6f}")
 
-        # --- Main loop: run exactly max_iterations - 1 more measurements ---
         for it in range(max_iterations - 1):
             if goal_handle.is_cancel_requested:
                 stop_reason = "cancelled"
@@ -1366,7 +1474,6 @@ class ActiveAlignmentServer(Node):
                 self.get_logger().info(f"✅ Reached {stop_threshold*100}% signal, stopping early.")
                 break
 
-            # Generate candidate
             if use_global_search:
                 x_candidate = np.random.uniform(0, 1, n)
             else:
@@ -1383,7 +1490,6 @@ class ActiveAlignmentServer(Node):
             if (it + 1) % 20 == 0:
                 self.get_logger().info(f"Iter {it+1}/{max_iterations-1}: best = {best_signal:.6f}")
 
-        # --- Finalise (no extra measurement) ---
         alignment_controller_mgr.set_joint_states_from_mapped(dict(zip(joint_names, x_best)))
         self.move_joints_to_current_stat_sync(alignment_controller_mgr, move_time=movement_time)
 
@@ -1398,18 +1504,13 @@ class ActiveAlignmentServer(Node):
 
         best_result = dict(zip(joint_names, x_best))
 
-        # ======================================================================
-        # 📁 SAVE RESULTS – ALWAYS EXECUTED (even on early stop / max iter)
-        # ======================================================================
         if run_folder is not None:
             self.get_logger().info(f"📁 Saving results to {run_folder}")
 
-            # If for some reason signal_hist is empty, we can't plot
             if not signal_hist:
                 self.get_logger().warn("No signal history recorded; cannot generate plot.")
                 return OptimizationResult(best_result, eval_count, final_signal)
 
-            # Pad all histories to match signal_hist length
             n_hist = len(signal_hist)
             if len(eta_lat_hist) < n_hist:
                 eta_lat_hist.extend([0.0] * (n_hist - len(eta_lat_hist)))
@@ -1429,7 +1530,6 @@ class ActiveAlignmentServer(Node):
             final_dist_perc = dist_perc_hist[-1] if dist_perc_hist else 0.0
             final_angle_perc = angle_perc_hist[-1] if angle_perc_hist else 0.0
 
-            # Save CSV and metadata
             try:
                 self.save_run_results(
                     run_folder, signal_hist, eta_lat_hist, eta_ang_hist, eta_clean_hist,

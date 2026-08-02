@@ -91,9 +91,9 @@ RING_SAVE_JSON = True                  # Save ring_spawn_info.json
 
 # ---- SEED GENERATION for multi‑seed batch testing ----
 GENERATE_SEED_POSES = True
-SEED_POWER_LEVELS = [2.0, 20.0, 60.0]   # power percentages to generate seeds for
-SEEDS_PER_LEVEL = 4                     # number of seeds per power level
-SEED_BASE = 592                        # starting seed number
+SEED_POWER_LEVELS = [0.0, 2.0, 20.0, 60.0]   # power percentages to generate seeds for
+SEEDS_PER_LEVEL = 5                     # number of seeds per power level
+SEED_BASE = 22234108                        # starting seed number
 
 # ---- JSON file paths ----
 SCRIPT_DIR = Path(__file__).parent

@@ -1,14 +1,14 @@
 {
   "seed_groups": [
-    {"power_percent": 0.0, "num_seeds": 2},
-    {"power_percent": 2.0, "num_seeds": 2},
-    {"power_percent": 20.0, "num_seeds": 2},
-    {"power_percent": 60.0, "num_seeds": 2}
+    {"power_percent": 0.0, "num_seeds": 0},
+    {"power_percent": 60.0, "num_seeds": 0},
+    {"power_percent": 20.0, "num_seeds": 0},
+    {"power_percent": 2.0, "num_seeds": 1}
   ],
   "tasks": [
     {
       "algorithm": "Hill Climb",
-      "iterations": 50,
+      "iterations": 0,
       "params": {
         "max_iterations": 100,
         "step_size": 0.1,
@@ -25,7 +25,7 @@
     },
     {
       "algorithm": "Nelder-Mead",
-      "iterations": 50,
+      "iterations": 5,
       "params": {
         "maxiter": 100,
         "xatol": 1e-5,
@@ -41,7 +41,7 @@
     },
     {
       "algorithm": "Random Search",
-      "iterations": 50,
+      "iterations": 0,
       "params": {
         "max_iterations": 100,
         "use_global_search": true,
