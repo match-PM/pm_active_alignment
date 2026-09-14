@@ -1,21 +1,21 @@
 {
   "W0": 5.2e-06,
   "LAMBDA": 1.55e-06,
+  "N_INDEX": 1.0,
   "SEARCH_FACTOR": 2.0,
   "THETA_EFF": 0.09488083145862991,
-  "MODE": "6D",
+  "Z_R": 5.4805590550366456e-05,
+  "MODE": "5D",
   "ENABLED_JOINTS": {
     "SP_X_Joint": true,
     "SP_Y_Joint": true,
     "SP_Z_Joint": true,
     "SP_A_Joint": true,
-    "SP_B_Joint": true,
-    "SP_C_Joint": true
+    "SP_B_Joint": true
   },
-  "RANDOM_SEED": 1085833577,
-  "MAGNITUDE_OFSET_M": 1.2e-05,
-  "CUSTOM_MAGNITUDE_ANGLE_DEG": 3.0,
-  "INITIAL_POWER_PERCENT": 0.17968947153124515,
+  "RANDOM_SEED": 670869601,
+  "INITIAL_POWER_PERCENT": 2.0359291688800623,
   "trans_limit": 1.04e-05,
-  "rot_limit": 0.18976166291725982
+  "rot_limit": 0.18976166291725982,
+  "Z_LIMIT": 0.00010961118110073291
 }

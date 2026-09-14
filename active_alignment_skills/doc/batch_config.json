@@ -1,16 +1,28 @@
 {
   "seed_groups": [
-    {"power_percent": 0.0, "num_seeds": 0},
-    {"power_percent": 60.0, "num_seeds": 0},
-    {"power_percent": 20.0, "num_seeds": 0},
-    {"power_percent": 2.0, "num_seeds": 1}
+    {
+      "power_percent": 0.0,
+      "num_seeds": 0
+    },
+    {
+      "power_percent": 2.0,
+      "num_seeds": 3
+    },
+    {
+      "power_percent": 20.0,
+      "num_seeds": 3
+    },
+    {
+      "power_percent": 60.0,
+      "num_seeds": 3
+    }
   ],
   "tasks": [
     {
       "algorithm": "Hill Climb",
       "iterations": 0,
       "params": {
-        "max_iterations": 100,
+        "max_iterations": 80,
         "step_size": 0.1,
         "stop_threshold": 0.99,
         "maximize": true,
@@ -24,31 +36,81 @@
       }
     },
     {
-      "algorithm": "Nelder-Mead",
-      "iterations": 5,
+      "algorithm": "Adaptive Hill Climb",
+      "iterations": 0,
       "params": {
-        "maxiter": 100,
+        "max_iterations": 80,
+        "initial_step_size": 0.1,
+        "stop_threshold": 0.99,
+        "maximize": true,
+        "coordinate_wise": true,
+        "adaptive_step": true,
+        "step_increase_factor": 1.3,
+        "step_decrease_factor": 0.3,
+        "min_step": 0.001,
+        "max_step": 0.5,
+        "movement_time": 0.01
+      }
+    },
+    {
+      "algorithm": "Nelder-Mead",
+      "iterations": 0,
+      "params": {
+        "max_iterations": 80,
         "xatol": 1e-5,
         "fatol": 1e-5,
-        "disp": true,
         "stop_threshold": 0.99,
         "simplex_step": 0.05,
         "alpha": 1.0,
-        "gamma": 2.0,
-        "rho": 0.5,
-        "sigma": 0.5
+        "beta": 2.0,
+        "gamma": 0.5,
+        "delta": 0.5,
+        "movement_time": 0.01,
+        "wait_for_settle": 0.05
+      }
+    },
+    {
+      "algorithm": "Py-BOBYQA",
+      "iterations": 50,
+      "params": {
+        "max_iterations": 80,
+        "initial_tr_radius": 0.1,
+        "final_tr_radius": 1e-5,
+        "npt": null,
+        "stop_threshold": 0.99,
+        "movement_time": 0.01,
+        "wait_for_settle": 0.05,
+        "noise_aware": true,
+        "use_restarts": true,
+        "quit_on_noise_level": false
       }
     },
     {
       "algorithm": "Random Search",
       "iterations": 0,
       "params": {
-        "max_iterations": 100,
+        "max_iterations": 80,
         "use_global_search": true,
         "perturbation_scale": 0.3,
         "stop_threshold": 0.99,
         "movement_time": 0.01,
         "wait_for_settle": 0.005
+      }
+    },
+    {
+      "algorithm": "Simple Adaptive Random Search",
+      "iterations": 0,
+      "params": {
+        "max_iterations": 80,
+        "movement_time": 0.01,
+        "wait_for_settle": 0.005,
+        "stop_threshold": 0.99,
+        "sigma": 0.25,
+        "alpha": 1.1,
+        "gamma": 0.9,
+        "min_sigma": 0.01,
+        "max_sigma": 1.0,
+        "window_size": 10
       }
     }
   ],

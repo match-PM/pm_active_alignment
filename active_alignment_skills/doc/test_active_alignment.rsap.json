@@ -46,8 +46,8 @@
                     {
                         "joint_name": "SP_Z_Joint",
                         "has_constraint": true,
-                        "upper_limit": 1.04e-05,
-                        "lower_limit": 1.04e-05
+                        "upper_limit": 0.00010961118110073291,
+                        "lower_limit": 0.00010961118110073291
                     },
                     {
                         "joint_name": "SP_A_Joint",
@@ -57,12 +57,6 @@
                     },
                     {
                         "joint_name": "SP_B_Joint",
-                        "has_constraint": true,
-                        "upper_limit": 0.18976166291725982,
-                        "lower_limit": 0.18976166291725982
-                    },
-                    {
-                        "joint_name": "SP_C_Joint",
                         "has_constraint": true,
                         "upper_limit": 0.18976166291725982,
                         "lower_limit": 0.18976166291725982
@@ -106,8 +100,8 @@
                     {
                         "joint_name": "SP_Z_Joint",
                         "has_constraint": true,
-                        "upper_limit": 1.04e-05,
-                        "lower_limit": 1.04e-05
+                        "upper_limit": 0.00010961118110073291,
+                        "lower_limit": 0.00010961118110073291
                     },
                     {
                         "joint_name": "SP_A_Joint",
@@ -120,9 +114,57 @@
                         "has_constraint": true,
                         "upper_limit": 0.18976166291725982,
                         "lower_limit": 0.18976166291725982
+                    }
+                ],
+                "alignment_topics": [
+                    {
+                        "topic_name": "/Test1/signal",
+                        "minimize_not_maximize": true,
+                        "weight_factor": 1.0
+                    }
+                ]
+            },
+            "has_breakpoint": false,
+            "is_active": true
+        },
+        {
+            "name": "Adaptive Hill Climb",
+            "description": "",
+            "action_type": "RosActionAction",
+            "action_position": 5,
+            "uuid": "3797122a-59bc-4f3a-89ed-eb13360a7b80",
+            "parameter_references": [],
+            "ros_action_client": "/active_alignment_server/exec_active_alignment_adaptive_hill_climb",
+            "ros_action_type": "active_alignment_interfaces/action/ActiveAlign",
+            "error_identifier": "success",
+            "request": {
+                "active_joints": [
+                    {
+                        "joint_name": "SP_X_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 1.04e-05,
+                        "lower_limit": 1.04e-05
                     },
                     {
-                        "joint_name": "SP_C_Joint",
+                        "joint_name": "SP_Y_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 1.04e-05,
+                        "lower_limit": 1.04e-05
+                    },
+                    {
+                        "joint_name": "SP_Z_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 0.00010961118110073291,
+                        "lower_limit": 0.00010961118110073291
+                    },
+                    {
+                        "joint_name": "SP_A_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 0.18976166291725982,
+                        "lower_limit": 0.18976166291725982
+                    },
+                    {
+                        "joint_name": "SP_B_Joint",
                         "has_constraint": true,
                         "upper_limit": 0.18976166291725982,
                         "lower_limit": 0.18976166291725982
@@ -166,8 +208,8 @@
                     {
                         "joint_name": "SP_Z_Joint",
                         "has_constraint": true,
-                        "upper_limit": 1.04e-05,
-                        "lower_limit": 1.04e-05
+                        "upper_limit": 0.00010961118110073291,
+                        "lower_limit": 0.00010961118110073291
                     },
                     {
                         "joint_name": "SP_A_Joint",
@@ -180,9 +222,57 @@
                         "has_constraint": true,
                         "upper_limit": 0.18976166291725982,
                         "lower_limit": 0.18976166291725982
+                    }
+                ],
+                "alignment_topics": [
+                    {
+                        "topic_name": "/Test1/signal",
+                        "minimize_not_maximize": false,
+                        "weight_factor": 1.0
+                    }
+                ]
+            },
+            "has_breakpoint": false,
+            "is_active": true
+        },
+        {
+            "name": "Simple Adaptive Random Search",
+            "description": "",
+            "action_type": "RosActionAction",
+            "action_position": 6,
+            "uuid": "22cf0692-4f62-1968-a876-4be545662489",
+            "parameter_references": [],
+            "ros_action_client": "/active_alignment_server/exec_active_alignment_simple_adaptive_random_search",
+            "ros_action_type": "active_alignment_interfaces/action/ActiveAlign",
+            "error_identifier": "success",
+            "request": {
+                "active_joints": [
+                    {
+                        "joint_name": "SP_X_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 1.04e-05,
+                        "lower_limit": 1.04e-05
                     },
                     {
-                        "joint_name": "SP_C_Joint",
+                        "joint_name": "SP_Y_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 1.04e-05,
+                        "lower_limit": 1.04e-05
+                    },
+                    {
+                        "joint_name": "SP_Z_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 0.00010961118110073291,
+                        "lower_limit": 0.00010961118110073291
+                    },
+                    {
+                        "joint_name": "SP_A_Joint",
+                        "has_constraint": true,
+                        "upper_limit": 0.18976166291725982,
+                        "lower_limit": 0.18976166291725982
+                    },
+                    {
+                        "joint_name": "SP_B_Joint",
                         "has_constraint": true,
                         "upper_limit": 0.18976166291725982,
                         "lower_limit": 0.18976166291725982
@@ -226,8 +316,8 @@
                     {
                         "joint_name": "SP_Z_Joint",
                         "has_constraint": true,
-                        "upper_limit": 1.04e-05,
-                        "lower_limit": 1.04e-05
+                        "upper_limit": 0.00010961118110073291,
+                        "lower_limit": 0.00010961118110073291
                     },
                     {
                         "joint_name": "SP_A_Joint",
@@ -237,12 +327,6 @@
                     },
                     {
                         "joint_name": "SP_B_Joint",
-                        "has_constraint": true,
-                        "upper_limit": 0.18976166291725982,
-                        "lower_limit": 0.18976166291725982
-                    },
-                    {
-                        "joint_name": "SP_C_Joint",
                         "has_constraint": true,
                         "upper_limit": 0.18976166291725982,
                         "lower_limit": 0.18976166291725982
