@@ -1,0 +1,118 @@
+# Paths resolve relative to this file. Poses use metres and xyzw quaternions.
+alignment_server: /active_alignment_server
+publisher_node: /multi_frame_deviation_node
+world_frame: world
+results_directory: simulation_results
+service_timeout: 10.0
+run_timeout: 600.0
+setup_settle_time: 0.2
+reset_movement_time: 1.0
+continue_on_failure: true
+signal_verification:
+  topic: /Test1/eta_clean
+  tolerance: 0.001
+  timeout: 5.0
+seed_base: 31248769
+optimizer_seed_base: 1000
+noise_seed_base: 2000
+mode: 5D
+reset_position: 0.5
+initial_joint_positions:
+  SP_X_Joint: 0.0
+  SP_Y_Joint: 0.0
+  SP_Z_Joint: 0.0
+  SP_A_Joint: 0.0
+  SP_B_Joint: 0.0
+# Optical batches use optical. Geometric reproduces the original distance/angle policy.
+model:
+  mode_field_radius: 5.2e-06
+  wavelength: 1.55e-06
+  refractive_index: 1.0
+  search_factor: 2.0
+  noise_mode: low
+  shot_low: 0.002
+  dark_low: 0.0004
+  shot_high: 0.01
+  dark_high: 0.002
+  publish_rate: 50.0
+  legacy_distance_scale: 10.0
+  policy: optical
+frame_pairs:
+  - name: Test1
+    frame_a: AL_Test_Frames_Align_1
+    frame_b: AL_Test_Frames_Target_1
+frames:
+  - frame_name: AL_Test_Frames_Target_1
+    parent_frame: SmarPod_Origin
+    position: [0.0, 0.0, 0.0573743]
+    quaternion: [0.0, 0.0, 0.0, 1.0]
+  - frame_name: AL_Test_Frames_Align_1
+    parent_frame: Smarpod_Part_Spawn
+    position: [0.0, 0.0, 0.0]
+    quaternion: [0.0, 0.0, 0.0, 1.0]
+target:
+  frame_name: AL_Test_Frames_Target_1
+  reference_frame: AL_Test_Frames_Align_1
+alignment_topics:
+  - topic_name: /Test1/signal
+    minimize_not_maximize: false
+    weight_factor: 1.0
+seed_groups:
+  - power_percent: 2.0
+    num_seeds: 3
+  - power_percent: 20.0
+    num_seeds: 3
+  - power_percent: 60.0
+    num_seeds: 3
+# Shared settings are written once and passed to every optimization goal.
+# The optical signal is maximized, so -0.99 is an optional early-stop objective threshold.
+optimization_parameters:
+  general:
+    max_evaluations: 80
+    wait_for_settle: 0.0
+    stop_on_objective_threshold: true
+    objective_threshold: -0.99
+# iterations counts complete runs. params contains only algorithm-specific settings.
+# A task can also override general: {max_evaluations: 120, measurement_timeout: 3.0}.
+tasks:
+  - algorithm: nelder_mead
+    iterations: 2
+    params:
+      simplex_step: 0.05
+      xatol: 1.0e-05
+      fatol: 1.0e-05
+  - algorithm: nelder_mead_manual
+    iterations: 2
+    params:
+      simplex_step: 0.05
+      alpha: 1.0
+      beta: 2.0
+      gamma: 0.5
+      delta: 0.5
+  - algorithm: hill_climb
+    iterations: 0
+    params:
+      step_size: 0.1
+  - algorithm: hill_climb_manual
+    iterations: 0
+    params:
+      step_size: 0.1
+      coordinate_wise: true
+  - algorithm: adaptive_hill_climb
+    iterations: 0
+    params:
+      adaptive_step: true
+  - algorithm: random_search
+    iterations: 0
+    params:
+      use_global_search: true
+  - algorithm: simple_adaptive_random_search
+    iterations: 0
+    params:
+      sigma: 0.25
+      window_size: 10
+  - algorithm: pybobyqa
+    iterations: 0
+    params:
+      initial_tr_radius: 0.1
+      final_tr_radius: 1.0e-05

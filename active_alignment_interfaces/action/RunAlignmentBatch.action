@@ -1,0 +1,15 @@
+# Empty uses the batch node's simulation_parameter_file parameter.
+string simulation_parameter_file
+---
+bool success
+uint32 completed_runs
+uint32 failed_runs
+string results_path
+string message
+---
+uint32 total_runs
+uint32 completed_runs
+uint32 failed_runs
+string algorithm
+uint32 repetition
+int64 seed

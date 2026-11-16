@@ -1,8 +1,13 @@
 JointAlign[] active_joints
 AlignTopic[] alignment_topics
+# Explicit parameter YAML takes precedence over rsap_path/optimization_parameter.yaml.
+string parameter_file
+# RSAP file or directory; also selects the parent directory for optimization logs.
+string rsap_path
 ---
 bool success
 int32 num_of_iterations
+# Weighted average of raw topic values at the best observed position; no direction sign changes.
 float32 final_eval_value
 JointAlignmentResult[] joint_results
 ---

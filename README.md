@@ -1,5 +1,18 @@
 # PM Active Alignment
 
+Current implementation: eight separate optimizer classes, YAML-configurable
+actions, an independent simulation/batch package, and a bringup package.
+
+- [Optimization actions, parameter files, and logging](docs/optimization.md)
+- [Simulation YAML, batch execution, and launch examples](docs/simulation.md)
+- [Algorithm correctness review and verification](docs/algorithm_review.md)
+- [Complete optimization defaults](active_alignment_skills/config/optimization_parameter.yaml)
+- [Complete simulation example](active_alignment_simulation/config/simulation_parameter.yaml)
+
+The interface now includes `parameter_file` and `rsap_path`; rebuild clients using
+`ActiveAlign`. The older overview below documents the original two-algorithm
+version. The linked documentation describes the current interfaces and behavior.
+
 Ein ROS2-basiertes System zur automatischen Ausrichtung von Robotergelenken mittels iterativer Optimierungsalgorithmen. Das Projekt ermöglicht es, Roboterarme durch Variationen von Gelenkpositionen optimal auszurichten und dabei Evaluierungssignale zu minimieren oder zu maximieren.
 
 ## 📋 Überblick
@@ -67,6 +80,22 @@ pm_active_alignment/
   ```bash
   pip install numpy scipy matplotlib urdf_parser_py
   ```
+
+Für den Optimierer `pybobyqa` zusätzlich **Py-BOBYQA** installieren (getestet mit
+Version 1.5.0). Verwende denselben Python-Interpreter wie der ROS2-Node; unter
+ROS2 Humble ist das hier `/usr/bin/python3`:
+
+```bash
+/usr/bin/python3 -m pip install --user 'Py-BOBYQA>=1.5,<2'
+```
+
+Die anderen Optimierer funktionieren auch ohne Py-BOBYQA.
+
+Das optionale Abbruchziel `general.objective_threshold` verwendet die vorzeichenbehaftete,
+gewichtete Zielfunktion: Die Optimierung endet bei `objective <= objective_threshold`.
+Für ein maximiertes positives Signal mit Ziel `0.95` also `-0.95` eintragen.
+Die Antwort `final_eval_value` gibt weiterhin den ursprünglichen Topic-Wert zurück
+(bei mehreren Topics das gewichtete Mittel ohne Vorzeichenänderung).
 
 ### Aufbau
 

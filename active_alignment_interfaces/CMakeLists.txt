@@ -20,6 +20,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/JointAlignmentResult.msg"
   "action/ActiveAlignment.action"
   "action/ActiveAlign.action"
+  "action/RunAlignmentBatch.action"
   DEPENDENCIES geometry_msgs 
 )
 

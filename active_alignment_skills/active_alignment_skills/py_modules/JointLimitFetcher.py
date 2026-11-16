@@ -6,6 +6,8 @@ from controller_manager_msgs.srv import ListControllers
 from urdf_parser_py.urdf import URDF, Joint as URDFJoint
 import numpy as np
 
+from ..helpers.robot_description import parse_robot_description
+
 
 class JointLimitFetcher:
     """
@@ -53,7 +55,7 @@ class JointLimitFetcher:
             return
 
         urdf_string = response.values[0].string_value
-        self._urdf = URDF.from_xml_string(urdf_string)
+        self._urdf = parse_robot_description(urdf_string)
 
         limits = {}
         for joint in self._urdf.joints:

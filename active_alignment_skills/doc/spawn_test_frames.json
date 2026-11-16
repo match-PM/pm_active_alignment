@@ -4,12 +4,12 @@
   "frames": [
     {
       "name": "Target_1",
-      "parent_frame": "SmarPod_Origin",
+      "parent_frame": "Smarpod_Pivot_Base_Origin",
       "transformation": {
         "translation": {
           "X": 0.0,
           "Y": 0.0,
-          "Z": 80.0
+          "Z": 30.0
         },
         "rotation": {
           "X": 0.0,
@@ -22,12 +22,12 @@
     },
     {
       "name": "Target_2",
-      "parent_frame": "SmarPod_Origin",
+      "parent_frame": "Smarpod_Pivot_Base_Origin",
       "transformation": {
         "translation": {
           "X": 0.0,
           "Y": 3.0,
-          "Z": 80.0
+          "Z": 30.0
         },
         "rotation": {
           "X": 0.0,
@@ -40,12 +40,12 @@
     },
     {
       "name": "Align_1",
-      "parent_frame": "Smarpod_Part_Spawn",
+      "parent_frame": "Smarpod_Top_Plate",
       "transformation": {
         "translation": {
           "X": 0.0,
-          "Y": 5.0,
-          "Z": 0.0
+          "Y": 0.0,
+          "Z": 30.0
         },
         "rotation": {
           "X": 0.0,
@@ -58,12 +58,12 @@
     },
     {
       "name": "Align_2",
-      "parent_frame": "Smarpod_Part_Spawn",
+      "parent_frame": "Smarpod_Top_Plate",
       "transformation": {
         "translation": {
           "X": 0.0,
-          "Y": 8.0,
-          "Z": 0.0
+          "Y": 3.0,
+          "Z": 30.0
         },
         "rotation": {
           "X": 0.0,

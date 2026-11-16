@@ -1,88 +1,129 @@
-#!/usr/bin/env python3
+"""Publish test measurements calculated from the poses of configured TF frame pairs."""
+
+import threading
+
 import rclpy
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
-from geometry_msgs.msg import TransformStamped
+from rclpy.parameter import Parameter
 from std_msgs.msg import Float32
-from tf2_ros import Buffer, TransformListener
-from scipy.spatial.transform import Rotation as R
-import math
+from std_srvs.srv import Trigger
+from tf2_ros import Buffer, TransformException, TransformListener
 
-
-class FramePair:
-    """Holds a pair of TF frames to compute deviations."""
-    def __init__(self, name: str, 
-                 frame_a: str, 
-                 frame_b: str):
-        
-        self.name = name
-        self.frame_a = frame_a
-        self.frame_b = frame_b
-
+from .simulation.policies import make_policy
+from .simulation.policies.optical import OpticalPolicy
+from .simulation.publisher_configuration import (
+    create_frame_pairs, load_publisher_overrides, publisher_defaults)
 
 
 class MultiFrameDeviationNode(Node):
-    def __init__(self):
-        super().__init__('multi_frame_deviation_node')
+    """Read TF, call the selected policy, and publish its calculated measurements."""
 
-        # Hardcode the frame pairs
-        self.frame_pairs: List[FramePair] = [
-            FramePair("Test1", "AL_Test_Frames_Align_1", "AL_Test_Frames_Target_1"),
-            FramePair("Test2", "AL_Test_Frames_Align_2", "AL_Test_Frames_Target_2"),
-            #FramePair("camera_to_base", "camera_link", "base_link")
-            # Add more pairs as needed
-        ]
+    def __init__(self, **kwargs):
+        super().__init__('multi_frame_deviation_node', **kwargs)
+        self.policy_lock = threading.RLock()
 
+        # Declare ordinary ROS parameters first. The optional simulation YAML can
+        # then override model settings and frame pairs, just as on the working branch.
+        defaults = publisher_defaults()
+        self.settings = {}
+        for name, default in defaults.items():
+            self.declare_parameter(name, default)
+            self.settings[name] = self.get_parameter(name).value
 
-        # TF buffer and listener
+        config_path = self.settings['simulation_parameter_file']
+        if config_path:
+            overrides = load_publisher_overrides(config_path)
+            parameters = []
+            for name, value in overrides.items():
+                parameters.append(Parameter(name, value=value))
+            response = self.set_parameters_atomically(parameters)
+            if not response.successful:
+                raise ValueError(response.reason)
+            self.settings.update(overrides)
+
+        self.frame_pairs = create_frame_pairs(self.settings)
+        self.policy = make_policy(self.settings)
+
+        # The listener maintains the latest transform for every configured pair.
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
+        self.clear_buffer_service = self.create_service(
+            Trigger, 'clear_tf_buffer', self.clear_buffer)
 
-        # Publishers for each pair
-        self.distance_pubs = {}
-        self.angle_pubs = {}
-
+        # Advertise the complete topic set once. Switching policies changes which
+        # values are published, without creating or destroying ROS publishers.
+        self.publishers_by_pair = {}
         for pair in self.frame_pairs:
-            self.distance_pubs[pair.name] = self.create_publisher(
-                Float32, f'{pair.name}/distance',10)
-            self.angle_pubs[pair.name] = self.create_publisher(
-                Float32, f'{pair.name}/angle', 10)
+            self.publishers_by_pair[pair.name] = {}
+            for topic in OpticalPolicy.TOPICS:
+                topic_name = f'{pair.name}/{topic}'
+                publisher = self.create_publisher(Float32, topic_name, 10)
+                self.publishers_by_pair[pair.name][topic] = publisher
 
-        # Timer to periodically compute deviations
-        self.timer = self.create_timer(0.1, self.compute_all_frame_deviations)  # 10 Hz
+        period = 1.0 / self.settings['publish_rate']
+        self.timer = self.create_timer(period, self.compute_all_frame_deviations)
+        self.add_on_set_parameters_callback(self.update_parameters)
+        self.get_logger().info(f"Dummy publisher using {self.settings['policy']} policy.")
 
-        # For throttled warnings
-        self._last_warn_times = {pair.name: 0.0 for pair in self.frame_pairs}
+    def update_parameters(self, parameters):
+        """Validate a complete policy update before replacing the active policy."""
+        startup_only = (
+            'pair_names', 'frames_a', 'frames_b', 'publish_rate', 'simulation_parameter_file')
+
+        try:
+            with self.policy_lock:
+                updated = dict(self.settings)
+                for parameter in parameters:
+                    if parameter.name == 'use_sim_time':
+                        continue
+                    if parameter.name not in updated:
+                        raise ValueError(f'Unknown publisher parameter: {parameter.name}')
+                    if parameter.name in startup_only:
+                        if parameter.value != self.settings[parameter.name]:
+                            raise ValueError(f'{parameter.name} requires a publisher restart.')
+                    updated[parameter.name] = parameter.value
+
+                # Building a policy also validates its physical constants and
+                # noise settings. A failed update leaves the current policy intact.
+                policy = make_policy(updated)
+                self.settings = updated
+                self.policy = policy
+            return SetParametersResult(successful=True)
+        except (ValueError, TypeError) as exc:
+            return SetParametersResult(successful=False, reason=str(exc))
+
+    def clear_buffer(self, request, response):
+        self.tf_buffer.clear()
+        response.success = True
+        response.message = 'TF buffer cleared.'
+        return response
 
     def compute_all_frame_deviations(self):
+        """Measure every frame pair using the selected geometric or optical policy."""
         for pair in self.frame_pairs:
             try:
-                # Lookup transform from frame_a -> frame_b
-                transform: TransformStamped = self.tf_buffer.lookup_transform(
-                    pair.frame_a, pair.frame_b, rclpy.time.Time()
-                )
+                transform = self.tf_buffer.lookup_transform(
+                    pair.frame_a, pair.frame_b, rclpy.time.Time())
+            except TransformException as exc:
+                self.get_logger().warning(
+                    f'TF unavailable for {pair.name}: {exc}', throttle_duration_sec=5.0)
+                continue
 
-                # Extract translation
-                t = transform.transform.translation
-                distance = math.sqrt(t.x**2 + t.y**2 + t.z**2) 
+            translation = transform.transform.translation
+            rotation = transform.transform.rotation
+            position = [translation.x, translation.y, translation.z]
+            quaternion = [rotation.x, rotation.y, rotation.z, rotation.w]
 
-                distance = 10*distance      # Scale distance for better competing with angle deviation in the reward function. This is a hack and should be replaced by a more principled approach in the future.
-                # Extract rotation as quaternion
-                q = transform.transform.rotation
-                r = R.from_quat([q.x, q.y, q.z, q.w])
-                # Angle deviation as magnitude of rotation vector
-                angle_deviation = r.magnitude()
+            # Policy equations live in simulation/policies/, not in this ROS node.
+            # optical.py calculates coupling and noise; geometric.py keeps the
+            # original scaled-distance and full-rotation measurements.
+            with self.policy_lock:
+                measurements = self.policy.evaluate(position, quaternion)
 
-                # Publish using the node's publisher dictionaries
-                self.distance_pubs[pair.name].publish(Float32(data=distance))
-                self.angle_pubs[pair.name].publish(Float32(data=angle_deviation))
-
-                self.get_logger().info(
-                    f"{pair.name}: distance={distance/10*1e3:.5f} mm, angle_dev={math.degrees(angle_deviation):.5f} deg"
-                )
-
-            except Exception as e:
-                self.get_logger().warn(f"TF lookup failed for {pair.name}: {e}")
-
+            for topic, value in measurements.items():
+                message = Float32(data=float(value))
+                self.publishers_by_pair[pair.name][topic].publish(message)
 
 
 def main(args=None):
@@ -94,8 +135,5 @@ def main(args=None):
         pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
-
-
-if __name__ == '__main__':
-    main()
+        if rclpy.ok():
+            rclpy.shutdown()
